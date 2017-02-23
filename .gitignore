@@ -27,5 +27,20 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
+# Framer Specific
+demo.framer/.*.html
+demo.framer/.app.js
+demo.framer/framer/*.old*
+demo.framer/framer/.*.hash
+demo.framer/framer/backup.coffee
+demo.framer/framer/backups
+demo.framer/framer/manifest.txt
+demo.framer/framer/metadata.json
+demo.framer/framer/*.png
+demo.framer/framer/framer.modules.js
+demo.framer/framer/framer.modules.js.hash
+demo.framer/framer/framer.generated.js
+demo.framer/framer/.bookmark
+
 # Dependencies
 node_modules
