@@ -1,7 +1,7 @@
 class ScrollBar extends Layer
   constructor: (options={}) ->
-    options.width ||= 24
-    options.height ||= Screen.height - 12
+    options.width ||= 16
+    options.height ||= options.parent.height - 8
     options.x ||= Align.right
     options.y ||= Align.center
     options.backgroundColor ||= ""
@@ -9,12 +9,13 @@ class ScrollBar extends Layer
 
     @scrollComponent = @parent
     @scrollContent = @parent.childrenWithName("content")[0]
+    @height = @scrollComponent.height
 
     @thumb = new Layer
       parent: @
       name: "thumb"
       x: Align.center
-      width: @width - 12
+      width: @width - 8
       height: @height * (@scrollComponent.height / @scrollContent.height)
       borderRadius: (@width * 0.6) / 2
       backgroundColor: "rgba(0,0,0,0.5)"
@@ -30,6 +31,7 @@ class ScrollBar extends Layer
 
 
   updateScrollBar: =>
+    @height = @scrollComponent.height
     if @scrollContent.height > @scrollComponent.height
 
       @thumb.height = @height * (@scrollComponent.height / @scrollContent.height)
@@ -60,7 +62,6 @@ class ScrollBar extends Layer
             @thumb.y = Align.bottom
 
 
-
 class ScrollComponentWithBar extends ScrollComponent
   constructor: (options={}) ->
     super options
@@ -70,8 +71,8 @@ class ScrollComponentWithBar extends ScrollComponent
       name: "scrollbar"
       visible: false
 
-    @_content.on("change:size", @scrollBar.updateScrollBar)
-
+    @content.on("change:size", @scrollBar.updateScrollBar)
+    @on("change:size", @scrollBar.updateScrollBar)
 
 
 module.exports = ScrollComponentWithBar
