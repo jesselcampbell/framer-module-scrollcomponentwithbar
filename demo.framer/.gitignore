@@ -27,5 +27,22 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
+# Framer Specific
+.*.html
+.app.js
+framer/*.old*
+framer/.*.hash
+framer/backup.coffee
+framer/backups
+framer/manifest.txt
+framer/metadata.json
+framer/*.png
+framer/framer.modules.js
+framer/framer.modules.js.hash
+framer/framer.generated.js
+framer/.bookmark
+
 # Dependencies
 node_modules
+
+demo.framer/framer/backups/backup-2017-02-23 12.36.11.coffee
