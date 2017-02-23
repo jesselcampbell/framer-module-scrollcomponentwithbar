@@ -1,0 +1,18 @@
+{
+  "orientation" : 0,
+  "updateDelay" : 0.3,
+  "contentScale" : 1,
+  "fullScreen" : false,
+  "sharedPrototype" : true,
+  "propertyPanelToggleStates" : {
+
+  },
+  "deviceType" : "apple-iphone-7-silver",
+  "projectId" : "6B14B181-E834-4AFD-A646-0DE92531EEB7",
+  "deviceOrientation" : 0,
+  "selectedHand" : "",
+  "foldedCodeRanges" : [
+
+  ],
+  "deviceScale" : 0.5
+}
