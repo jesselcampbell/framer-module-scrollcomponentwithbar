@@ -40,6 +40,8 @@ sc = new ScrollComponentWithBar
 	scrollHorizontal: false
 	mouseWheelEnabled: true
 	backgroundColor: ""
+	scrollTrackColor: "blue"
+	scrollThumbColor: "red"
 
 for item, index in data
 	li = new listItem
