@@ -1,139 +1,124 @@
 class ScrollComponentWithBar extends ScrollComponent
-  @define "scrollBar", get: -> return @_scrollBar
+  @define "scrollBar",
+    importable: false
+    exportable: false
+    get: -> return @_scrollBar
 
-  # Using @proxyProperty here, which is undocumented, but is used in some Framer components.
-  # Defined in BaseClass: https://github.com/koenbok/Framer/blob/6c8224f651c00d9c21db5f954090cc44d947fb4d/framer/BaseClass.coffee#L73
-  # Used in the ScrollComponent: https://github.com/koenbok/Framer/blob/ebdd729648203abd7ae33f026a256667cc1c00f3/framer/Components/ScrollComponent.coffee#L56
-  @define "scrollVisible", @proxyProperty("scrollBar.visibility")
-  @define "scrollTrackColor", @proxyProperty("scrollBar.trackColor")
-  @define "scrollThumbColor", @proxyProperty("scrollBar.thumbColor")
+  @define "scrollVisible",
+    get: -> return @_scrollVisible
+    set: (value) -> @_scrollVisible = value
+
+  @define "scrollTrackColor",
+    get: -> return @_scrollTrackColor
+    set: (value) -> @_scrollTrackColor = value
+
+  @define "scrollThumbColor",
+    get: -> return @_scrollThumbColor
+    set: (value) -> @_scrollThumbColor = value
+
 
   constructor: (options={}) ->
+    @_scrollVisible ||= "auto"
+    @_scrollTrackColor ||= null
+    @_scrollThumbColor ||= "rgba(0,0,0,0.5)"
     super options
 
-    @_scrollBar = new ScrollBar
-      parent: @
-      name: "scrollbar"
+    if @_scrollVisible is "hidden" then return
 
-    # Based on its use in the ScrollComponent documentation:
-    # Only at this point we can set all the proxy properties, because before this the scrollBar layer did not exist. So we have to apply those again.
-    @_applyProxyDefaults(options)
+    # Make a scroll bar
+    @makeScrollBar()
 
-    @content.on("change:size", @scrollBar.updateScrollBar)
-    @on("change:size", @scrollBar.updateScrollBar)
+    # Update scroll bar when content or component changes
+    @content.on("change:size", @updateScrollBar)
+    @on("change:size", @updateScrollBar)
 
-    # Debounce so it doesn't get called multiple times in succession
-    scrollEndHandler = Utils.debounce 2.5, =>
+    # This needs to be more of a timer function that gets reset on ScrollStart
+    @_autoHideHandler = Utils.debounce 2.5, =>
       Utils.delay 2.5, => @_scrollBar.animate("hidden")
 
-    if @scrollVisible is "autohide"
+    # Add autohide functionality
+    if @_scrollVisible is "auto"
+      @_autoHideHandler()
       @on Events.ScrollStart, (e,l) => if @content.height > @height then @_scrollBar.stateSwitch("default")
-      @on Events.ScrollEnd, (e,l) => scrollEndHandler()
-      scrollEndHandler()
-
-    # Hide by default
-    unless @scrollVisible is "visible" then @_scrollBar.stateSwitch("hidden")
+      @on Events.ScrollEnd, (e,l) => @_autoHideHandler()
 
 
-
-class ScrollBar extends Layer
-  @define "visibility",
-    get: -> return @_visibility
-    set: (value) -> @_visibility = value
-
-  @define "trackColor",
-    get: -> return @_trackColor
-    set: (value) -> @_trackColor = value
-
-  @define "thumbColor",
-    get: -> return @_thumbColor
-    set: (value) -> @_thumbColor = value
-
-
-  constructor: (options={}) ->
-    options.width ||= 16
-    options.height ||= options.parent.height - 8
-    options.x ||= Align.right
-    options.y ||= Align.top
-    options.backgroundColor ||= null
-    @_visibility ||= "autohide"
-    @_trackColor ||= null
-    @_thumbColor ||= "rgba(0,0,0,0.5)"
-    super options
-
-    @scrollComponent = @parent
-    @scrollContent = @parent.childrenWithName("content")[0]
-    @height = @scrollComponent.height
-    @thumbInset = 4
-
-    @track = new Layer
+  makeScrollBar: () ->
+    @_scrollBar = new Layer
       parent: @
-      name: "track"
-      x: Align.center
-      y: @thumbInset / 2
-      width: @width - 8
-      height: @height - @thumbInset
-      borderRadius: (@width * 0.6) / 2
-      backgroundColor: @_trackColor
+      name: "scrollbar"
+      width: 16
+      height: @height
+      x: Align.right
+      backgroundColor: null
 
-    @thumb = new Layer
-      parent: @
-      name: "thumb"
-      x: Align.center
-      y: @thumbInset / 2
-      width: @width - 8
-      height: (@height - @thumbInset) * (@scrollComponent.height / @scrollContent.height)
-      borderRadius: (@width * 0.6) / 2
-      backgroundColor: @_thumbColor
-      shadowColor: "rgba(255,255,255,0.5)"
-      shadowBlur: 2
-
-    @thumb.draggable.enabled = true
-    @thumb.draggable.horizontal = false
-    @thumb.draggable.constraints = @
-    @thumb.draggable.overdrag = false
-    @thumb.draggable.momentum = false
-    @thumb.draggable.bounce = false
-
-    @states.hidden =
+    @_scrollBar.states.hidden =
       opacity: 0
       animationOptions:
         curve: Bezier(0.4, 0, 0.2, 1)
         time: 0.4
 
+    @_inset = 4
+
+    @_track = new Layer
+      parent: @_scrollBar
+      name: "track"
+      x: Align.center
+      y: Align.center
+      width: @_scrollBar.width - 8
+      height: @_scrollBar.height - @_inset
+      borderRadius: (@width * 0.6) / 2
+      backgroundColor: @_scrollTrackColor
+
+    @_thumb = new Layer
+      parent: @_scrollBar
+      name: "thumb"
+      x: Align.center
+      y: @_track.y
+      width: @_track.width
+      height: (@height - 4) * (@height / @content.height)
+      borderRadius: (@width * 0.6) / 2
+      backgroundColor: @_scrollThumbColor
+      shadowColor: "rgba(255,255,255,0.5)"
+      shadowBlur: 2
+
+    @_thumb.draggable.enabled = true
+    @_thumb.draggable.horizontal = false
+    @_thumb.draggable.constraints = @
+    @_thumb.draggable.overdrag = false
+    @_thumb.draggable.momentum = false
+    @_thumb.draggable.bounce = false
+
 
   updateScrollBar: =>
-    @height = @scrollComponent.height
-    @thumb.height = @height * (@scrollComponent.height / @scrollContent.height)
+    if @_scrollVisible is "auto"
+      @_scrollBar.stateSwitch("default")
+      @_autoHideHandler()
 
-    trackPiece = @height - @thumb.height - @thumbInset
-    overflowHeight = @scrollContent.height - @scrollComponent.height
+    @_thumb.height = @_track.height * (@height / @content.height)
 
-    if @_visibility is "hidden"
-      @stateSwitch("hidden")
-    else if @visibility is "visible" or @scrollContent.height > @scrollComponent.height
-      @stateSwitch("default")
+    trackPiece = @height - @_thumb.height - @_inset
+    overflowHeight = @content.height - @height
 
-    @thumb.on "change:frame", =>
-      if @thumb.draggable.isDragging
+    @_thumb.on "change:frame", =>
+      if @_thumb.draggable.isDragging
         yPos = Utils.modulate(@thumb.y, [0, trackPiece], [0, overflowHeight], false)
-        @scrollComponent.scrollY = yPos
+        @scrollY = yPos
 
-    @scrollContent.on "change:frame", =>
-      if !@thumb.draggable.isDragging
-        yPos = Utils.modulate(@scrollComponent.scrollY, [0, overflowHeight], [0, trackPiece], false)
-        @thumb.y = yPos
+    @_content.on "change:frame", =>
+      if !@_thumb.draggable.isDragging
+        yPos = Utils.modulate(@scrollY, [0, overflowHeight], [0, trackPiece], false)
+        @_thumb.y = yPos
 
-        if @scrollComponent.scrollY <= 0
-          overScrollPerc = Math.abs(@scrollComponent.scrollY) / @scrollComponent.height
-          @thumb.height = (@height * (@scrollComponent.height / @scrollContent.height)) * (1 - overScrollPerc)
-          @thumb.y = Align.top(@thumbInset / 2)
+        if @scrollY <= 0
+          overScrollPerc = Math.abs(@scrollY) / @_track.height
+          @_thumb.height = (@_track.height * (@height / @content.height)) * (1 - overScrollPerc)
+          @_thumb.y = Align.top(@_inset / 2)
 
-        if @scrollComponent.scrollY >= @scrollContent.height - @scrollComponent.height
-          overScrollPerc = (Math.abs(@scrollComponent.scrollY) - overflowHeight) / @scrollComponent.height
-          @thumb.height = (@height * (@scrollComponent.height / @scrollContent.height)) * (1 - overScrollPerc)
-          @thumb.y = Align.bottom(-@thumbInset / 2)
-
+        else if @scrollY >= @content.height - @height
+          overScrollPerc = (Math.abs(@scrollY) - overflowHeight) / @height
+          @_thumb.height = (@_track.height * (@height / @content.height)) * (1 - overScrollPerc)
+          @_thumb.y = Align.bottom(-@_inset / 2)
 
 
 module.exports = ScrollComponentWithBar
