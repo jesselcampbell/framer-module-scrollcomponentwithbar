@@ -9,11 +9,10 @@ myScroller = new ScrollComponentWithBar
   scrollVisible: "visible"
   scrollTrackColor: "rgba(0,0,0,0.1)"
   scrollTrackColor: "rgba(0,0,0,0.6)"
-  # properties inherited from ScrollComponent
 ```
 
 ## Options
-**ScrollComponentWithBar** is an extension of **ScrollComponent**, and all options are inherited from that class. Documentation for that can be found [here](https://framer.com/docs/#scroll.scrollcomponent).
+**ScrollComponentWithBar** is an extension of **ScrollComponent**, and all options are inherited from that class. Documentation for that can be found [here](https://framer.com/docs/#scroll.scrollcomponent). Additional options below.
 
 - `scrollVisible` — Accepts `"visible"`, `"hidden"`, or `"auto"`. Defaults to `"auto"`
 - `scrollTrackColor` — Accepts a Color object. Defaults to `null`
