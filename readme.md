@@ -15,7 +15,7 @@ myScroller = new ScrollComponentWithBar
 ## Options
 **ScrollComponentWithBar** is an extension of **ScrollComponent**, and all options are inherited from that class. Documentation for that can be found [here](https://framer.com/docs/#scroll.scrollcomponent).
 
-- `scrollVisible` — `"visible"`|`"hidden"`|`"auto"` Defaults to "auto"
+- `scrollVisible` — Accepts `"visible"`, `"hidden"`, or `"auto"`. Defaults to `"auto"`
 - `scrollTrackColor` — Accepts a Color object. Defaults to `null`
 - `scrollThumbColor` — Accepts a Color object. Defaults to `"rgba(0,0,0,0.5)"`
 
