@@ -23,27 +23,7 @@ class ScrollComponentWithBar extends ScrollComponent
     @_scrollThumbColor ||= "rgba(0,0,0,0.5)"
     super options
 
-    if @_scrollVisible is "hidden" then return
-
-    # Update scroll bar when content or component changes
-    @content.on("change:size", @updateScrollBar)
-    @on("change:size", @updateScrollBar)
-
-    # Make a scroll bar
-    @makeScrollBar()
-
-    # This needs to be more of a timer function that gets reset on ScrollStart
-    @_autoHideHandler = Utils.debounce 2.5, =>
-      Utils.delay 2.5, => @_scrollBar.animate("hidden")
-
-    # Add autohide functionality
-    if @_scrollVisible is "auto"
-      @_autoHideHandler()
-      @on Events.ScrollStart, (e,l) => if @content.height > @height then @_scrollBar.stateSwitch("default")
-      @on Events.ScrollEnd, (e,l) => @_autoHideHandler()
-
-
-  makeScrollBar: () ->
+    # Make the scroll bar elements
     @_inset = 4
 
     @_scrollBar = new Layer
@@ -53,12 +33,6 @@ class ScrollComponentWithBar extends ScrollComponent
       height: @height
       x: Align.right
       backgroundColor: null
-
-    @_scrollBar.states.hidden =
-      opacity: 0
-      animationOptions:
-        curve: Bezier(0.4, 0, 0.2, 1)
-        time: 0.4
 
     @_track = new Layer
       parent: @_scrollBar
@@ -84,44 +58,94 @@ class ScrollComponentWithBar extends ScrollComponent
 
     @_thumb.draggable.enabled = true
     @_thumb.draggable.horizontal = false
-    @_thumb.draggable.constraints = @
     @_thumb.draggable.overdrag = false
-    @_thumb.draggable.momentum = false
-    @_thumb.draggable.bounce = false
+    @_thumb.draggable.constraints = @_track
+
+    @_scrollBarFade = new Animation @_scrollBar,
+      opacity: 0
+      animationOptions:
+        curve: Bezier(0.4, 0, 0.2, 1)
+        time: 0.4
+
+    @_trackFade = new Animation @_track,
+      opacity: 0
+      animationOptions:
+        curve: Bezier(0.4, 0, 0.2, 1)
+        time: 0.4
+
+    @_fadeStart = () =>
+      @_trackFade.start()
+      @_scrollBarFade.start()
+
+    @_fadeStop = () =>
+      @_trackFade.stop()
+      @_scrollBarFade.stop()
+
+    @_autohideCount = 2500
+    Utils.interval 0.5, =>
+      @_autohideCount = @_autohideCount - 500
+      if @_autohideCount <= 0 then @_fadeStart()
+
+    @updateScrollBar()
+    @on "change:size", @updateScrollBar
+    @content.on "change:size", @updateScrollBar
 
 
   updateScrollBar: =>
-    if @_scrollVisible is "auto"
-      if @content.height > @height then @_scrollBar.stateSwitch("default") else @_scrollBar.stateSwitch("hidden")
-      @_autoHideHandler()
+    if @_scrollVisible is "visible" then @_scrollBar.opacity = 1
+    else if @_scrollVisible is "hidden" then @_scrollBar.opacity = 0
+    else
+      if @content.height > @height
+        @_fadeStop()
+        @_scrollBar.opacity = 1
+        @_track.opacity = 1
+        @_autohideCount = 2500
 
+        @on Events.Scroll, (e,l) =>
+          @_fadeStop()
+          @_scrollBar.opacity = 1
+          @_track.opacity = 1
+          @_autohideCount = 2500
+
+      else @_scrollBar.opacity = 0
+
+
+    # Size elements
     @_scrollBar.height = @height
     @_track.height = @_scrollBar.height - @_inset
-    @_track.y = Align.center
-    @_thumb.height = @_track.height * (@_scrollBar.height / @content.height)
+    @_thumb.height = @_track.height * (@height / @content.height)
+    @_thumb.draggable.constraints = @_track
 
-    trackPiece = @_scrollBar.height - @_thumb.height - @_inset
-    overflowHeight = @content.height - @_scrollBar.height
+    trackPieceHeight = @_track.height - @_thumb.height
+    overflowHeight = @content.height - @height
 
-    @_thumb.on "change:frame", =>
-      if @_thumb.draggable.isDragging
-        yPos = Utils.modulate(@thumb.y, [0, trackPiece], [0, overflowHeight], false)
-        @scrollY = yPos
 
-    @_content.on "change:frame", =>
+    @_content.on "change:y", =>
+      if @content.height > @height then @_scrollBar.opacity = 1
+
+      # Change the thumb position when dragging the content
       if !@_thumb.draggable.isDragging
-        yPos = Utils.modulate(@scrollY, [0, overflowHeight], [0, trackPiece], false)
+        yPos = Utils.modulate(@scrollY, [0, overflowHeight], [0, trackPieceHeight], false)
         @_thumb.y = yPos
 
+        # Squeeze the thumb on overscroll (top)
         if @scrollY <= 0
           overScrollPerc = Math.abs(@scrollY) / @_track.height
           @_thumb.height = (@_track.height * (@_scrollBar.height / @content.height)) * (1 - overScrollPerc)
           @_thumb.y = Align.top(@_inset / 2)
 
+        # Squeeze the thumb on overscroll (bottom)
         else if @scrollY >= @content.height - @_scrollBar.height
           overScrollPerc = (Math.abs(@scrollY) - overflowHeight) / @_scrollBar.height
           @_thumb.height = (@_track.height * (@_scrollBar.height / @content.height)) * (1 - overScrollPerc)
           @_thumb.y = Align.bottom(-@_inset / 2)
+
+
+    @_thumb.on "change:y", =>
+      # Change the scroll position when dragging the thumb
+      if @_thumb.draggable.isDragging
+        yPos = Utils.modulate(@_thumb.y, [0, trackPieceHeight], [0, overflowHeight], false)
+        @scrollY = yPos
 
 
 
